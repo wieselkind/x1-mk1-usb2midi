@@ -157,7 +157,7 @@ impl<T: UsbContext> X1mk1<T> {
                         if button.curr {
                             let _l = self.led[button.write_idx as usize];
                             let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
-                            if ctrl_name.eq("HOTCUE") {
+                            if ctrl_name.eq("HOTCUE") && self.shift == 0 {
                                 self.hotcue = !self.hotcue;
                                 self.led[button.write_idx as usize] = if self.hotcue { LED_BRIGHT } else { LED_DIM };
                             }
