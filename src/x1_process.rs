@@ -13,6 +13,7 @@ const USB_WRITE_FD: u8 = 0x01;
 const USB_UNLOCK_FD: u8 = 0x81;
 const USB_READ_FD: u8 = 0x84;
 const LED_DIM: u8 = 0x05;
+const LED_DIM_PULSE: u8 = 0x25;
 const LED_BRIGHT: u8 = 0x7F;
 const MIDI_CHANNEL: u8 = 0xB0;
 const MIDI_CHANNEL_LED: u8 = 0xB2;
@@ -31,6 +32,9 @@ pub struct X1mk1<T: UsbContext> {
     led: [u8; 32],
     led_hotcue: [u8; 16],
     shift: u8,
+    shiftHotcue: u8,
+    layer_a: u8,
+    layer_b: u8,
     hotcue: bool,
 }
 
@@ -71,6 +75,9 @@ impl<T: UsbContext> X1mk1<T> {
             led: leds,
             led_hotcue,
             shift: 0,
+            shiftHotcue: 0,
+            layer_a: 0,
+            layer_b: 0,
             hotcue: false,
         }
     }
@@ -155,12 +162,81 @@ impl<T: UsbContext> X1mk1<T> {
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
                     if button.curr != button.prev {
                         if button.curr {
+                            //self.led[button.write_idx as usize] = LED_DIM_PULSE; // push feedback
                             let _l = self.led[button.write_idx as usize];
-                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
+                            let mut layer_offset = 0;
+                            if button.layer_a {
+                                layer_offset = self.layer_a;
+                            } else if button.layer_b {
+                                layer_offset = self.layer_b;
+                            }
+                            println!("Button {} pressed layerOffset={} {} {}", ctrl_name, layer_offset, self.layer_a, self.layer_b);
+                            let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, button.midi_ctrl_ch, 127]);
+
                             if ctrl_name.eq("HOTCUE") && self.shift == 0 {
                                 self.hotcue = !self.hotcue;
                                 self.led[button.write_idx as usize] = if self.hotcue { LED_BRIGHT } else { LED_DIM };
+                            } else if ctrl_name.eq("HOTCUE") && self.shift == 1 {
+                                self.shiftHotcue = if self.shiftHotcue == 0 { 1 } else { 0 };
                             }
+
+                            if ctrl_name.eq("DECK_A_BUTTON_FX1") {
+                                if self.shiftHotcue == 1 {
+                                    self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                    if self.layer_a == 1 {
+                                        self.layer_a = 0;
+                                    } else {
+                                        self.layer_a = 1;
+                                    }
+                                }
+                                println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
+                                self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                //LED_DIM_PULSE
+                            }
+                            if ctrl_name.eq("DECK_A_BUTTON_FX2") {
+                                if self.shiftHotcue == 1 {
+                                    self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                    if self.layer_a == 2 {
+                                        self.layer_a = 0;
+                                    } else {
+                                        self.layer_a = 2;
+                                    }
+                                }
+
+                                println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
+                                self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                //LED_DIM_PULSE
+                            }
+                            if ctrl_name.eq("DECK_B_BUTTON_FX1") {
+                                if self.shiftHotcue == 1 {
+                                    self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                    if self.layer_b == 1 {
+                                        self.layer_b = 0;
+                                    } else {
+                                        self.layer_b = 1;
+                                    }
+                                }
+                                println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
+                                self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                //LED_DIM_PULSE
+                            }
+                            if ctrl_name.eq("DECK_B_BUTTON_FX2") {
+                                if self.shiftHotcue == 1 {
+                                    self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                    if self.layer_b == 2 {
+                                        self.layer_b = 0;
+                                    } else {
+                                        self.layer_b = 2;
+                                    }
+                                }
+
+                                println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
+                                self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                                //LED_DIM_PULSE
+                            }
+                        } else {
+                            //this needs the current button status for toggle buttons
+                            //self.led[button.write_idx as usize] = LED_DIM; // push feedback
                         }
                     }
                     button.prev = button.curr;
@@ -169,11 +245,26 @@ impl<T: UsbContext> X1mk1<T> {
                     if self.hotcue && button.hotcue_ignore {
                         continue;
                     }
+
+                    let mut layer_offset = 0;
+                    if button.layer_a {
+                        layer_offset = self.layer_a;
+                    } else if button.layer_b {
+                        layer_offset = self.layer_b;
+                    }
+
                     button.curr = binbyte[button.read_i as usize][button.read_j as usize];
                     if button.curr == button.prev {
                         continue;
-                    } else if button.curr {
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 127]);
+                    } else if button.curr {    
+                        if self.shiftHotcue == 1 {
+                            // LED debug output for self.shiftHotcue
+                            self.led[button.write_idx as usize] = LED_BRIGHT;
+                        } else {
+                            self.led[button.write_idx as usize] = LED_DIM_PULSE;
+                        }
+
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, button.midi_ctrl_ch, 127]);
                         if ctrl_name.eq("SHIFT") {
                             self.shift = 1;
                         }
@@ -182,7 +273,7 @@ impl<T: UsbContext> X1mk1<T> {
                         if ctrl_name.eq("SHIFT") {
                             self.shift = 0;
                         }
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, button.midi_ctrl_ch, 0]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, button.midi_ctrl_ch, 0]);
                     }
                     button.prev = button.curr;
                 }
@@ -203,7 +294,13 @@ impl<T: UsbContext> X1mk1<T> {
                 ButtonType::Knob(ref mut knob) => {
                     knob.curr = knob_to_midi(buf[knob.read_i as usize], buf[knob.read_j as usize]);
                     if knob.curr != knob.prev {
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, knob.midi_ctrl_ch, knob.curr]);
+                        let mut layer_offset = 0;
+                        if knob.layer_a {
+                            layer_offset = self.layer_a;
+                        } else if knob.layer_b {
+                            layer_offset = self.layer_b;
+                        }
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, knob.midi_ctrl_ch, knob.curr]);
                     }
                     knob.prev = knob.curr;
                 }
@@ -229,7 +326,13 @@ impl<T: UsbContext> X1mk1<T> {
                             // Clockwise
                             velocity = 127;
                         }
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift, encoder.midi_ctrl_ch, velocity]);
+                        let mut layer_offset = 0;
+                        if encoder.layer_a {
+                            layer_offset = self.layer_a;
+                        } else if encoder.layer_b {
+                            layer_offset = self.layer_b;
+                        }
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, encoder.midi_ctrl_ch, velocity]);
                     }
                     encoder.prev = encoder.curr;
                 }

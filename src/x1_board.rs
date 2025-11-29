@@ -10,6 +10,8 @@ pub struct Button {
     pub write_idx: u8,
     pub midi_ctrl_ch: u8,
     pub hotcue_ignore: bool,
+    pub layer_a: bool,
+    pub layer_b: bool
 }
 
 pub struct Knob {
@@ -18,6 +20,8 @@ pub struct Knob {
     pub read_i: u8,
     pub read_j: u8,
     pub midi_ctrl_ch: u8,
+    pub layer_a: bool,
+    pub layer_b: bool
 }
 
 pub struct Encoder {
@@ -26,6 +30,8 @@ pub struct Encoder {
     pub read_pos: char,
     pub read_i: u8,
     pub midi_ctrl_ch: u8,
+    pub layer_a: bool,
+    pub layer_b: bool
 }
 
 pub enum ButtonType {
@@ -53,7 +59,9 @@ impl X1mk1Board {
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false),
+                        layer_a: yaml_button.layer_a.unwrap_or(false),
+                        layer_b: yaml_button.layer_b.unwrap_or(false)
                     };
                     ButtonType::Toggle(button)
                 }
@@ -65,7 +73,9 @@ impl X1mk1Board {
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false),
+                        layer_a: yaml_button.layer_a.unwrap_or(false),
+                        layer_b: yaml_button.layer_b.unwrap_or(false)
                     };
                     ButtonType::Hold(button)
                 }
@@ -77,7 +87,9 @@ impl X1mk1Board {
                         read_j: yaml_button.read_j.unwrap(),
                         write_idx: yaml_button.write_idx.unwrap_or(0),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
-                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false)
+                        hotcue_ignore: yaml_button.hotcue_ignore.unwrap_or(false),
+                        layer_a: false,
+                        layer_b: false
                     };
                     ButtonType::Hotcue(button)
                 }
@@ -88,6 +100,8 @@ impl X1mk1Board {
                         read_i: yaml_button.read_i,
                         read_j: yaml_button.read_j.unwrap(),
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
+                        layer_a: yaml_button.layer_a.unwrap_or(false),
+                        layer_b: yaml_button.layer_b.unwrap_or(false)
                     };
                     ButtonType::Knob(knob)
                 }
@@ -98,6 +112,8 @@ impl X1mk1Board {
                         read_pos: yaml_button.read_pos.unwrap(),
                         read_i: yaml_button.read_i,
                         midi_ctrl_ch: yaml_button.midi_ctrl_ch,
+                        layer_a: yaml_button.layer_a.unwrap_or(false),
+                        layer_b: yaml_button.layer_b.unwrap_or(false)
                     };
                     ButtonType::Encoder(encoder)
                 }

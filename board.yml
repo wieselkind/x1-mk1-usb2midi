@@ -6,12 +6,16 @@ buttons:
     read_j: 4
     write_idx: 29
     midi_ctrl_ch: 45
+    layer_a: false
+    layer_b: false
   - name: "HOTCUE"
     type: "Toggle"
     read_i: 4
     read_j: 7
     write_idx: 31
     midi_ctrl_ch: 46
+    layer_a: false
+    layer_b: false
   # EFFECTS
   # FX1
   - name: "FX1_BUTTON_PLAY"
@@ -20,44 +24,52 @@ buttons:
     read_j: 4
     write_idx: 8
     midi_ctrl_ch: 8
+    layer_a: true
   - name: "FX1_BUTTON_1"
     type: "Toggle"
     read_i: 3
     read_j: 5
     write_idx: 7
     midi_ctrl_ch: 10
+    layer_a: true
   - name: "FX1_BUTTON_2"
     type: "Toggle"
     read_i: 3
     read_j: 6
     write_idx: 6
     midi_ctrl_ch: 12
+    layer_a: true
   - name: "FX1_BUTTON_3"
     type: "Toggle"
     read_i: 3
     read_j: 7
     write_idx: 5
     midi_ctrl_ch: 14
+    layer_a: true
   - name: "FX1_KNOB_DRY"
     type: "Knob"
     read_i: 16
     read_j: 17
     midi_ctrl_ch: 0
+    layer_a: true
   - name: "FX1_KNOB_1"
     type: "Knob"
     read_i: 20
     read_j: 21
     midi_ctrl_ch: 2
+    layer_a: true
   - name: "FX1_KNOB_2"
     type: "Knob"
     read_i: 22
     read_j: 23
     midi_ctrl_ch: 4
+    layer_a: true
   - name: "FX1_KNOB_3"
     type: "Knob"
     read_i: 18
     read_j: 19
     midi_ctrl_ch: 6
+    layer_a: true
   # FX2
   - name: "FX2_BUTTON_PLAY"
     type: "Toggle"
@@ -65,44 +77,52 @@ buttons:
     read_j: 0
     write_idx: 4
     midi_ctrl_ch: 9
+    layer_b: true
   - name: "FX2_BUTTON_1"
     type: "Toggle"
     read_i: 4
     read_j: 1
     write_idx: 3
     midi_ctrl_ch: 11
+    layer_b: true
   - name: "FX2_BUTTON_2"
     type: "Toggle"
     read_i: 4
     read_j: 2
     write_idx: 2
     midi_ctrl_ch: 13
+    layer_b: true
   - name: "FX2_BUTTON_3"
     type: "Toggle"
     read_i: 4
     read_j: 3
     write_idx: 1
     midi_ctrl_ch: 15
+    layer_b: true
   - name: "FX2_KNOB_DRY"
     type: "Knob"
     read_i: 12
     read_j: 13
     midi_ctrl_ch: 1
+    layer_b: true
   - name: "FX2_KNOB_1"
     type: "Knob"
     read_i: 10
     read_j: 11
     midi_ctrl_ch: 3
+    layer_b: true
   - name: "FX2_KNOB_2"
     type: "Knob"
     read_i: 8
     read_j: 9
     midi_ctrl_ch: 5
+    layer_b: true
   - name: "FX2_KNOB_3"
     type: "Knob"
     read_i: 14
     read_j: 15
     midi_ctrl_ch: 7
+    layer_b: true
   # DECKS
   # DECK A
   - name: "DECK_A_ENCODER_BROWSE"

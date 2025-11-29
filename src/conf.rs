@@ -20,6 +20,8 @@ pub struct YamlButton {
     pub write_idx: Option<u8>,
     pub midi_ctrl_ch: u8,
     pub hotcue_ignore: Option<bool>,
+    pub layer_a: Option<bool>,
+    pub layer_b: Option<bool>
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
