@@ -15,7 +15,7 @@ const USB_UNLOCK_FD: u8 = 0x81;
 const USB_READ_FD: u8 = 0x84;
 const LED_DIM: u8 = 0x05;
 const LED_DIM_PULSE: u8 = 0x25;
-const LED_BRIGHT: u8 = 0x7C;                // TODO revert to max 0x7F
+const LED_BRIGHT: u8 = 0x7F;                
 const MIDI_CHANNEL: u8 = 0xB0;              // Base MIDI channel for buttons/knobs/encoders
 const MIDI_CHANNEL_LED: u8 = 0xB2;          // Base MIDI channel for LED control
 const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;       // Base MIDI channel for HOTCUE buttons
@@ -266,13 +266,13 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_a = 1;
                                     }
                                     skip = true;
-                                } else {
-                                    if self.led_layerindicator[0].set_value == LED_BRIGHT {
-                                        self.led_layerindicator[0].set_dim();
-                                    } else {
-                                        self.led_layerindicator[0].set_bright();
-                                    }
                                 }
+                                if self.led[button.write_idx as usize] == LED_DIM {
+                                    self.led_layerindicator[0].set_dim();
+                                } else {
+                                    self.led_layerindicator[0].set_bright();
+                                }
+                                println!("led = {}", self.led[button.write_idx as usize]);
                                 for layerindicator in &mut self.led_layerindicator {
                                     layerindicator.reset();
                                 }
@@ -289,13 +289,13 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_a = 2;
                                     }
                                     skip = true;
-                                } else {
-                                    if self.led_layerindicator[1].set_value == LED_BRIGHT {
-                                        self.led_layerindicator[1].set_dim();
-                                    } else {
-                                        self.led_layerindicator[1].set_bright();
-                                    }
                                 }
+                                if self.led[button.write_idx as usize] == LED_DIM {
+                                    self.led_layerindicator[1].set_dim();
+                                    } else {
+                                    self.led_layerindicator[1].set_bright();
+                                }
+                                println!("led = {}", self.led[button.write_idx as usize]);
                                 for layerindicator in &mut self.led_layerindicator {
                                     layerindicator.reset();
                                 }
@@ -313,13 +313,13 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_b = 1;
                                     }
                                     skip = true;
-                                } else {
-                                    if self.led_layerindicator[2].set_value == LED_BRIGHT {
-                                        self.led_layerindicator[2].set_dim();
-                                    } else {
-                                        self.led_layerindicator[2].set_bright();
-                                    }
                                 }
+                                if self.led[button.write_idx as usize] == LED_DIM {
+                                    self.led_layerindicator[2].set_dim();
+                                } else {
+                                    self.led_layerindicator[2].set_bright();
+                                }
+                                println!("led = {}", self.led[button.write_idx as usize]);
                                 for layerindicator in &mut self.led_layerindicator {
                                     layerindicator.reset();
                                 }
@@ -336,13 +336,13 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_b = 2;
                                     }
                                     skip = true;
-                                } else {
-                                    if self.led_layerindicator[3].set_value == LED_BRIGHT {
-                                        self.led_layerindicator[3].set_dim();
-                                    } else {
-                                        self.led_layerindicator[3].set_bright();
-                                    }
                                 }
+                                if self.led[button.write_idx as usize] == LED_DIM {
+                                    self.led_layerindicator[3].set_dim();
+                                } else {
+                                    self.led_layerindicator[3].set_bright();
+                                }
+                                println!("led = {}", self.led[button.write_idx as usize]);
                                 for layerindicator in &mut self.led_layerindicator {
                                     layerindicator.reset();
                                 }
