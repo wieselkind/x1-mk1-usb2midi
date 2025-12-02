@@ -1,3 +1,4 @@
+use std::ffi::c_float;
 use std::sync::mpsc;
 use std::time::Duration;
 
@@ -14,11 +15,89 @@ const USB_UNLOCK_FD: u8 = 0x81;
 const USB_READ_FD: u8 = 0x84;
 const LED_DIM: u8 = 0x05;
 const LED_DIM_PULSE: u8 = 0x25;
-const LED_BRIGHT: u8 = 0x7F;
-const MIDI_CHANNEL: u8 = 0xB0;
-const MIDI_CHANNEL_LED: u8 = 0xB2;
-const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;
+const LED_BRIGHT: u8 = 0x7C;                // TODO revert to max 0x7F
+const MIDI_CHANNEL: u8 = 0xB0;              // Base MIDI channel for buttons/knobs/encoders
+const MIDI_CHANNEL_LED: u8 = 0xB2;          // Base MIDI channel for LED control
+const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;       // Base MIDI channel for HOTCUE buttons
 
+struct BlinkState {
+    set_value: u8,
+    value: c_float,
+    direction: bool,
+    speed: c_float,
+    min: c_float,
+    max: c_float,
+}
+
+impl BlinkState {
+    fn blinky_compute(&mut self) {                
+        if self.direction {
+            if self.value < self.max {
+                self.value += self.speed;
+            } else {
+                self.direction = false;
+                self.value -= self.speed;
+            }
+        } else {
+            if self.value > self.min {
+                self.value -= self.speed;
+            } else {
+                self.direction = true;
+                self.value += self.speed;
+            }
+        }
+    }
+
+    fn blink_value(&mut self) -> u8 {
+        self.blinky_compute();                
+        return self.value as u8;
+    }
+
+    fn set_dim(&mut self) {
+        self.set_value = LED_DIM;
+        self.speed= 0.25;   // to match 40 frames
+        self.reset();
+    }
+
+    fn set_bright(&mut self) {
+        self.set_value = LED_BRIGHT;
+        self.speed= 2.5;    // to match 40 frames
+        self.reset();
+    }
+
+    fn reset(&mut self) {
+        println!("Resetting BlinkState of {}", self.value);
+        self.value = self.set_value.into();
+        self.direction = true;
+        if self.set_value == LED_DIM {
+            self.min = LED_DIM as c_float;
+            self.max = 3.0 * (LED_DIM as c_float);
+        } else {
+            self.min = LED_BRIGHT as c_float - 100.0;
+            self.max = LED_BRIGHT as c_float;
+        }
+        self.value = self.min;
+    }
+}
+        
+
+const BLINKSTATE_DIM: BlinkState = BlinkState {
+    set_value: LED_DIM,
+    value: LED_DIM as c_float,
+    direction: true,
+    speed: 0.25,
+    min: LED_DIM as c_float,
+    max: 2.0*(LED_DIM as c_float),
+};
+
+const BLINKSTATE_BRIGHT: BlinkState = BlinkState {
+    set_value: LED_BRIGHT,
+    value: LED_BRIGHT as c_float,
+    direction: true,
+    speed: 2.5,
+    min: LED_BRIGHT as c_float - 100.0,
+    max: LED_BRIGHT as c_float,
+};
 pub struct X1mk1<T: UsbContext> {
     pub device: Device<T>,
     pub handle: DeviceHandle<T>,
@@ -30,9 +109,10 @@ pub struct X1mk1<T: UsbContext> {
     usb_timeout: Duration,
     usb_endpoint: Endpoint,
     led: [u8; 32],
+    led_hotcue: [u8; 16],
+    led_layerindicator: [BlinkState; 4],
     led_blinky: u8,
     led_blinky_direction: bool,
-    led_hotcue: [u8; 16],
     shift: u8,
     shiftHotcue: u8,
     layer_a: u8,
@@ -75,9 +155,10 @@ impl<T: UsbContext> X1mk1<T> {
             usb_timeout: Duration::from_millis(50),
             usb_endpoint,
             led: leds,
+            led_hotcue,
+            led_layerindicator: [BLINKSTATE_DIM; 4],
             led_blinky: LED_DIM,
             led_blinky_direction: true,
-            led_hotcue,
             shift: 0,
             shiftHotcue: 0,
             layer_a: 0,
@@ -185,6 +266,15 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_a = 1;
                                     }
                                     skip = true;
+                                } else {
+                                    if self.led_layerindicator[0].set_value == LED_BRIGHT {
+                                        self.led_layerindicator[0].set_dim();
+                                    } else {
+                                        self.led_layerindicator[0].set_bright();
+                                    }
+                                }
+                                for layerindicator in &mut self.led_layerindicator {
+                                    layerindicator.reset();
                                 }
                                 println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
@@ -199,6 +289,15 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_a = 2;
                                     }
                                     skip = true;
+                                } else {
+                                    if self.led_layerindicator[1].set_value == LED_BRIGHT {
+                                        self.led_layerindicator[1].set_dim();
+                                    } else {
+                                        self.led_layerindicator[1].set_bright();
+                                    }
+                                }
+                                for layerindicator in &mut self.led_layerindicator {
+                                    layerindicator.reset();
                                 }
 
                                 println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
@@ -214,6 +313,15 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_b = 1;
                                     }
                                     skip = true;
+                                } else {
+                                    if self.led_layerindicator[2].set_value == LED_BRIGHT {
+                                        self.led_layerindicator[2].set_dim();
+                                    } else {
+                                        self.led_layerindicator[2].set_bright();
+                                    }
+                                }
+                                for layerindicator in &mut self.led_layerindicator {
+                                    layerindicator.reset();
                                 }
                                 println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
@@ -228,15 +336,21 @@ impl<T: UsbContext> X1mk1<T> {
                                         self.layer_b = 2;
                                     }
                                     skip = true;
+                                } else {
+                                    if self.led_layerindicator[3].set_value == LED_BRIGHT {
+                                        self.led_layerindicator[3].set_dim();
+                                    } else {
+                                        self.led_layerindicator[3].set_bright();
+                                    }
                                 }
-
+                                for layerindicator in &mut self.led_layerindicator {
+                                    layerindicator.reset();
+                                }
                                 println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
                                 //LED_DIM_PULSE
                             }
-                            if skip {
-                                // skip sending midi for layer buttons
-                            } else {
+                            if !skip {  // skip sending midi for active layer buttons
                                 let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, button.midi_ctrl_ch, 127]);
                             }
                             if ctrl_name.eq("HOTCUE") && self.shift == 0 {
@@ -244,6 +358,9 @@ impl<T: UsbContext> X1mk1<T> {
                                 self.led[button.write_idx as usize] = if self.hotcue { LED_BRIGHT } else { LED_DIM };
                             } else if ctrl_name.eq("HOTCUE") && self.shift == 1 {
                                 self.shiftHotcue = if self.shiftHotcue == 0 { 1 } else { 0 };
+                                for layerindicator in &mut self.led_layerindicator {
+                                    layerindicator.reset();
+                                }
                             }
                         } else {
                             //this needs the current button status for toggle buttons
@@ -350,45 +467,25 @@ impl<T: UsbContext> X1mk1<T> {
             }
         }
     }
-
-    fn blinky_light(&mut self) {
-        if self.led_blinky_direction {
-            if self.led_blinky < LED_DIM_PULSE {
-                self.led_blinky += 1;
-            } else {
-                self.led_blinky_direction = false;
-                self.led_blinky -= 1;
-            }
-        } else {
-            if self.led_blinky > LED_DIM {
-                self.led_blinky -= 1;
-            } else {
-                self.led_blinky_direction = true;
-                self.led_blinky += 1;
-            }
-        }
-    }
     
     fn update_leds(&mut self) {
         let mut led = self.led;
-        self.blinky_light();
         if self.hotcue {
             for i in 9..25 {
                 led[i] = self.led_hotcue[i - 9];
             }
         }
         
-        if self.shiftHotcue == 1 {
-            println!("ShiftHotcue active");
+        if self.layer_a > 0 || self.layer_b > 0 {
             if self.layer_a == 1 {
-                led[25] = self.led_blinky; // deckA FX1 mode LED
+                led[25] = self.led_layerindicator[0].blink_value(); // deckA FX1 mode LED
             } else if self.layer_a == 2 {
-                led[26] = self.led_blinky; // deckA FX2 mode LED
+                led[26] = self.led_layerindicator[1].blink_value(); // deckA FX2 mode LED
             }
             if self.layer_b == 1 {
-                led[27] = self.led_blinky; // deckB FX1 mode LED
+                led[27] = self.led_layerindicator[2].blink_value(); // deckB FX1 mode LED
             } else if self.layer_b == 2 {
-                led[28] = self.led_blinky; // deckB FX2 mode LED
+                led[28] = self.led_layerindicator[3].blink_value(); // deckB FX2 mode LED
             }
         } else {
             //led[0] = LED_DIM_PULSE; // normal mode LED
