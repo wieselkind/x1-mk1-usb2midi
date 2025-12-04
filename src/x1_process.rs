@@ -64,6 +64,13 @@ impl BlinkState {
         self.speed= 2.5;    // to match 40 frames
         self.reset();
     }
+    fn toggle(&mut self, current_in: u8) {
+        if current_in == LED_DIM {
+            self.set_bright();
+        } else {
+            self.set_dim();
+        }
+    }
 
     fn reset(&mut self) {
         println!("Resetting BlinkState of {}", self.value);
@@ -263,15 +270,13 @@ impl<T: UsbContext> X1mk1<T> {
                                     }
                                     skip = true;
                                 }
-                                if self.led[button.write_idx as usize] == LED_DIM {
-                                    self.led_layerindicator[0].set_dim();
-                                } else {
-                                    self.led_layerindicator[0].set_bright();
+                                let mut current_in = self.led[button.write_idx as usize];
+                                if self.layer_a == 1 {
+                                    current_in = self.led_layerindicator[0].set_value;
                                 }
+                                self.led_layerindicator[0].toggle(current_in);
+                                for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
                                 println!("led = {}", self.led[button.write_idx as usize]);
-                                for layerindicator in &mut self.led_layerindicator {
-                                    layerindicator.reset();
-                                }
                                 println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
                                 //LED_DIM_PULSE
@@ -286,16 +291,13 @@ impl<T: UsbContext> X1mk1<T> {
                                     }
                                     skip = true;
                                 }
-                                if self.led[button.write_idx as usize] == LED_DIM {
-                                    self.led_layerindicator[1].set_dim();
-                                    } else {
-                                    self.led_layerindicator[1].set_bright();
+                                let mut current_in = self.led[button.write_idx as usize];
+                                if self.layer_a == 2 {
+                                    current_in = self.led_layerindicator[1].set_value;
                                 }
+                                self.led_layerindicator[1].toggle(current_in);
+                                for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
                                 println!("led = {}", self.led[button.write_idx as usize]);
-                                for layerindicator in &mut self.led_layerindicator {
-                                    layerindicator.reset();
-                                }
-
                                 println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
                                 //LED_DIM_PULSE
@@ -310,15 +312,13 @@ impl<T: UsbContext> X1mk1<T> {
                                     }
                                     skip = true;
                                 }
-                                if self.led[button.write_idx as usize] == LED_DIM {
-                                    self.led_layerindicator[2].set_dim();
-                                } else {
-                                    self.led_layerindicator[2].set_bright();
+                                let mut current_in = self.led[button.write_idx as usize];
+                                if self.layer_b == 1 {
+                                    current_in = self.led_layerindicator[2].set_value;
                                 }
+                                self.led_layerindicator[2].toggle(current_in);
+                                for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); } 
                                 println!("led = {}", self.led[button.write_idx as usize]);
-                                for layerindicator in &mut self.led_layerindicator {
-                                    layerindicator.reset();
-                                }
                                 println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
                                 //LED_DIM_PULSE
@@ -333,15 +333,13 @@ impl<T: UsbContext> X1mk1<T> {
                                     }
                                     skip = true;
                                 }
-                                if self.led[button.write_idx as usize] == LED_DIM {
-                                    self.led_layerindicator[3].set_dim();
-                                } else {
-                                    self.led_layerindicator[3].set_bright();
+                                let mut current_in = self.led[button.write_idx as usize];
+                                if self.layer_b == 2 {
+                                    current_in = self.led_layerindicator[3].set_value;
                                 }
+                                self.led_layerindicator[3].toggle(current_in);
+                                for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
                                 println!("led = {}", self.led[button.write_idx as usize]);
-                                for layerindicator in &mut self.led_layerindicator {
-                                    layerindicator.reset();
-                                }
                                 println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
                                 //self.led[button.write_idx as usize] = LED_DIM_PULSE;
                                 //LED_DIM_PULSE
