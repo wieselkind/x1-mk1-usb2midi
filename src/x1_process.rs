@@ -284,7 +284,7 @@ impl<T: UsbContext> X1mk1<T> {
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
                                 if self.layer_a == 1 && self.shiftHotcue == 0 {
-                                    current_in = self.led_layerindicator[0].get_inverted();
+                                    current_in = self.led_layerindicator[0].get_inverted();  // why .inverted() ? it just works!?
                                 }
                                 self.led_layerindicator[0].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
@@ -305,7 +305,7 @@ impl<T: UsbContext> X1mk1<T> {
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
                                 if self.layer_a == 2 && self.shiftHotcue == 0 {
-                                    current_in = self.led_layerindicator[1].get_inverted();
+                                    current_in = self.led_layerindicator[1].get_inverted();  // why .inverted() ? it just works!?
                                 }
                                 self.led_layerindicator[1].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
@@ -326,7 +326,7 @@ impl<T: UsbContext> X1mk1<T> {
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
                                 if self.layer_b == 1 && self.shiftHotcue == 0  {
-                                    current_in = self.led_layerindicator[2].get_inverted();
+                                    current_in = self.led_layerindicator[2].get_inverted();  // why .inverted() ? it just works!?
                                 }
                                 self.led_layerindicator[2].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); } 
@@ -347,7 +347,7 @@ impl<T: UsbContext> X1mk1<T> {
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
                                 if self.layer_b == 2 && self.shiftHotcue == 0 {
-                                    current_in = self.led_layerindicator[3].get_inverted();
+                                    current_in = self.led_layerindicator[3].get_inverted();  // why .inverted() ? it just works!?
                                 }
                                 self.led_layerindicator[3].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
