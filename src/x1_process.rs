@@ -63,13 +63,13 @@ impl BlinkState {
 
     fn set_dim(&mut self) {
         self.set_value = LED_DIM;
-        self.speed= 0.25;   // to match 40 frames
+        self.speed= BLINKSTATE_DIM.speed;   // to match 40 frames
         self.reset();
     }
 
     fn set_bright(&mut self) {
         self.set_value = LED_BRIGHT;
-        self.speed= 2.5;    // to match 40 frames
+        self.speed= BLINKSTATE_BRIGHT.speed;    // to match 40 frames
         self.reset();
     }
 
@@ -87,13 +87,13 @@ impl BlinkState {
         self.value = self.set_value.into();
         self.direction = true;
         if self.set_value == LED_DIM {
-            self.min = LED_DIM as c_float;
-            self.max = 3.0 * (LED_DIM as c_float);
-            self.speed= 0.25;   // to match 40 frames
+            self.min = BLINKSTATE_DIM.min;
+            self.max = BLINKSTATE_DIM.max;
+            self.speed= BLINKSTATE_DIM.speed;   // to match 40 frames
         } else {
-            self.min = LED_BRIGHT as c_float - 100.0;
-            self.max = LED_BRIGHT as c_float;
-            self.speed= 2.5;    // to match 40 frames
+            self.min = BLINKSTATE_BRIGHT.min;
+            self.max = BLINKSTATE_BRIGHT.max;
+            self.speed= BLINKSTATE_BRIGHT.speed;    // to match 40 frames
         }
         self.value = self.min;
     }
@@ -106,7 +106,7 @@ const BLINKSTATE_DIM: BlinkState = BlinkState {
     direction: true,
     speed: 0.25,
     min: LED_DIM as c_float,
-    max: 2.0*(LED_DIM as c_float),
+    max: 3.0*(LED_DIM as c_float),
 };
 
 const BLINKSTATE_BRIGHT: BlinkState = BlinkState {
@@ -134,6 +134,7 @@ pub struct X1mk1<T: UsbContext> {
     shiftHotcue: u8,
     layer_a: u8,
     layer_b: u8,
+    layer_ab: u8,
     hotcue: bool,
 }
 
