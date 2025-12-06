@@ -53,6 +53,14 @@ impl BlinkState {
         return self.value as u8;
     }
 
+    fn get_inverted(&self) -> u8 {
+        if self.set_value == LED_DIM {
+            return LED_BRIGHT;
+        } else {
+            return LED_DIM;
+        }
+    }
+
     fn set_dim(&mut self) {
         self.set_value = LED_DIM;
         self.speed= 0.25;   // to match 40 frames
@@ -64,11 +72,13 @@ impl BlinkState {
         self.speed= 2.5;    // to match 40 frames
         self.reset();
     }
-    fn toggle(&mut self, current_in: u8) {
+
+    fn set_to_value(&mut self, current_in: u8) {
+        println!("Toggling BlinkState of {} from {}", self.value, current_in);
         if current_in == LED_DIM {
-            self.set_bright();
-        } else {
             self.set_dim();
+        } else {
+            self.set_bright();
         }
     }
 
@@ -79,9 +89,11 @@ impl BlinkState {
         if self.set_value == LED_DIM {
             self.min = LED_DIM as c_float;
             self.max = 3.0 * (LED_DIM as c_float);
+            self.speed= 0.25;   // to match 40 frames
         } else {
             self.min = LED_BRIGHT as c_float - 100.0;
             self.max = LED_BRIGHT as c_float;
+            self.speed= 2.5;    // to match 40 frames
         }
         self.value = self.min;
     }
@@ -258,7 +270,7 @@ impl<T: UsbContext> X1mk1<T> {
                             } else if button.layer_b {
                                 layer_offset = self.layer_b;
                             }
-                            println!("Button {} pressed layerOffset={} {} {}", ctrl_name, layer_offset, self.layer_a, self.layer_b);
+                            println!("Button {} pressed layerOffset={} layer_a{} layer_b{}", ctrl_name, layer_offset, self.layer_a, self.layer_b);
                             let mut skip = false;
                             if ctrl_name.eq("DECK_A_BUTTON_FX1") {
                                 if self.shiftHotcue == 1 {
@@ -271,10 +283,10 @@ impl<T: UsbContext> X1mk1<T> {
                                     skip = true;
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
-                                if self.layer_a == 1 {
-                                    current_in = self.led_layerindicator[0].set_value;
+                                if self.layer_a == 1 && self.shiftHotcue == 0 {
+                                    current_in = self.led_layerindicator[0].get_inverted();
                                 }
-                                self.led_layerindicator[0].toggle(current_in);
+                                self.led_layerindicator[0].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
                                 println!("led = {}", self.led[button.write_idx as usize]);
                                 println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
@@ -292,10 +304,10 @@ impl<T: UsbContext> X1mk1<T> {
                                     skip = true;
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
-                                if self.layer_a == 2 {
-                                    current_in = self.led_layerindicator[1].set_value;
+                                if self.layer_a == 2 && self.shiftHotcue == 0 {
+                                    current_in = self.led_layerindicator[1].get_inverted();
                                 }
-                                self.led_layerindicator[1].toggle(current_in);
+                                self.led_layerindicator[1].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
                                 println!("led = {}", self.led[button.write_idx as usize]);
                                 println!("Layer A set to {} {}", self.layer_a, self.shiftHotcue);
@@ -313,10 +325,10 @@ impl<T: UsbContext> X1mk1<T> {
                                     skip = true;
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
-                                if self.layer_b == 1 {
-                                    current_in = self.led_layerindicator[2].set_value;
+                                if self.layer_b == 1 && self.shiftHotcue == 0  {
+                                    current_in = self.led_layerindicator[2].get_inverted();
                                 }
-                                self.led_layerindicator[2].toggle(current_in);
+                                self.led_layerindicator[2].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); } 
                                 println!("led = {}", self.led[button.write_idx as usize]);
                                 println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
@@ -334,10 +346,10 @@ impl<T: UsbContext> X1mk1<T> {
                                     skip = true;
                                 }
                                 let mut current_in = self.led[button.write_idx as usize];
-                                if self.layer_b == 2 {
-                                    current_in = self.led_layerindicator[3].set_value;
+                                if self.layer_b == 2 && self.shiftHotcue == 0 {
+                                    current_in = self.led_layerindicator[3].get_inverted();
                                 }
-                                self.led_layerindicator[3].toggle(current_in);
+                                self.led_layerindicator[3].set_to_value(current_in);
                                 for layerindicator in &mut self.led_layerindicator { layerindicator.reset(); }
                                 println!("led = {}", self.led[button.write_idx as usize]);
                                 println!("Layer B set to {} {}", self.layer_b, self.shiftHotcue);
