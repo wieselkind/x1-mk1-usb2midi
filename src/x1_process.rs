@@ -179,6 +179,7 @@ impl<T: UsbContext> X1mk1<T> {
             shiftHotcue: 0,
             layer_a: 0,
             layer_b: 0,
+            layer_ab: 0,
             hotcue: false,
         }
     }
