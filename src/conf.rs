@@ -26,5 +26,11 @@ pub struct YamlButton {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct YamlConfig {
-    pub buttons: Vec<YamlButton>,
+    pub configuration: Configuration,
+    pub buttons: Vec<YamlButton>
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct Configuration {
+    pub traktor_compat_enabled: bool
 }

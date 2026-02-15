@@ -2,6 +2,9 @@ use std::collections::HashMap;
 
 use crate::conf::{YamlButtonType, YamlConfig};
 
+pub struct Configuration {
+    pub traktor_compat_enabled: bool
+}
 pub struct Button {
     pub curr: bool,
     pub prev: bool,
@@ -43,6 +46,7 @@ pub enum ButtonType {
 }
 
 pub struct X1mk1Board {
+    pub(crate) configuration: Configuration,
     pub(crate) buttons: HashMap<String, ButtonType>,
 }
 
@@ -121,7 +125,10 @@ impl X1mk1Board {
             buttons.insert(yaml_button.name.clone(), button_type);
         }
         X1mk1Board {
-            buttons
+            configuration: Configuration {
+                traktor_compat_enabled: yaml_config.configuration.traktor_compat_enabled,
+            },
+            buttons,
         }
     }
 }

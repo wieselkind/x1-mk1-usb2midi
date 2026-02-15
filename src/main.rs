@@ -33,10 +33,15 @@ fn main() {
     let status_item = RefCell::new(StatusItem::new("🎛️", Menu::new(vec![])));
 
     sync_infinite_event_loop(receiver_menu_bar, move |x1| {
-        let items = x1
+        let mut items: Vec<MenuItem> = x1
             .iter()
             .map(|(name, connected)| MenuItem::new(format!("{} {}", if *connected { "🟢" } else { "🔴" }, name), None, None))
             .collect();
+        let mut item2: Vec<MenuItem> = x1
+            .iter()
+            .map(|(name, connected)| MenuItem::new(format!("{} {}", if *connected { "🟢" } else { "🔴" }, "Traktor Knob soft-takeover"), None, None))
+            .collect();
+        items.append(item2.as_mut());
         status_item.borrow_mut().set_menu(Menu::new(items));
     });
 }

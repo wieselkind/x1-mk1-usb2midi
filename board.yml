@@ -1,3 +1,6 @@
+configuration:
+  # Traktor Knob soft-takeover compatibility (if enabled Knobs will not change midi channel when layer is changed or shift is held)
+  traktor_compat_enabled: true
 buttons:
   # SPECIALS
   - name: "SHIFT"
@@ -12,6 +15,8 @@ buttons:
     type: "Toggle"
     read_i: 4
     read_j: 7
+    #hotcue write_idx: 30 white led
+    #hotcue write_idx: 31 green led
     write_idx: 31
     midi_ctrl_ch: 46
     layer_a: false

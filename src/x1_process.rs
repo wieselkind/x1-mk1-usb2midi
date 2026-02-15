@@ -16,9 +16,14 @@ const USB_READ_FD: u8 = 0x84;
 const LED_DIM: u8 = 0x05;
 const LED_DIM_PULSE: u8 = 0x25;
 const LED_BRIGHT: u8 = 0x7F;                
-const MIDI_CHANNEL: u8 = 0xB0;              // Base MIDI channel for buttons/knobs/encoders
-const MIDI_CHANNEL_LED: u8 = 0xB2;          // Base MIDI channel for LED control
-const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;       // Base MIDI channel for HOTCUE buttons
+                                            // 4 least significant bits of midi status byte contain the midi channel - range 1-16 (+1 on 0..15 value)
+const MIDI_CHANNEL: u8 = 0xB0;              // =176 four least significant bits 0000 = 0 -> 1 Base MIDI channel for buttons/knobs/encoders
+// TODO: MIDI_CHANNEL_LED should also be midi channel 1 to match other buttons/knobs/encoders?
+const MIDI_CHANNEL_LED: u8 = 0xB2;          // =178 four least significant bits 0010 = 2 -> 3 MIDI channel for LED midi inputs
+// TODO: MIDI_CHANNEL_HOTCUE is used for both HOTCUE button control outputs and LED inputs, should be split?
+// No, actually HOTCUE buttons should be the same channel as other buttons and LED inputs (channel 1)
+// By adding a new mapping to board.yml this will allow learning LED input channels in traktor from pressing the button
+const MIDI_CHANNEL_HOTCUE: u8 = 0xB3;       // =179 four least significant bits 0011 = 3 -> 4 MIDI channel for HOTCUE buttons / LED midi inputs
 
 struct BlinkState {
     set_value: u8,
@@ -204,10 +209,27 @@ impl<T: UsbContext> X1mk1<T> {
         loop {
             match midi_rx.try_recv() {
                 Ok(message) => {
-                    let i = message[1] as usize;
+                    self.board.buttons.iter().for_each(|(_name, button_type)| {
+                        match button_type {
+                            ButtonType::Toggle(button) |
+                            ButtonType::Hold(button) |
+                            ButtonType::Hotcue(button) => {
+                            if button.write_idx == message[1] { //button.midi_ctrl_ch == message[1] &&
+                                // message
+                                println!("LED? update for button {} message {} {}", _name, message[1], message[2]);
+                                // TODO: adjust old traktor mapping LED out CC's to send the button-CC's instead
+                                // otherwise below will behave weird and trigger multiple LEDs for 1 button press
+                                // also there's something wwrong with board.yml, since multiple buttons+encoders(!) share the same write_idx(1)
+                                //self.led[button.write_idx as usize] = message[2];
+                                println!("traktor_compat {}", self.board.configuration.traktor_compat_enabled);
+                            }
+                        } _ => {}
+                        }
+                    });
+                    let i = message[1] as usize;        // message[1] = midi data byte1 CC number
                     if (0..32).contains(&i) {
-                        if message[0] == MIDI_CHANNEL_LED {
-                            self.led[i] = message[2];
+                        if message[0] == MIDI_CHANNEL_LED {    // message[0] = midi status byte (4 least significant bits = midi channel 1-16)
+                            self.led[i] = message[2];          // message[2] = midi data byte2 CC value
                         } else if message[0] == MIDI_CHANNEL_HOTCUE {
                             self.led_hotcue[i] = if message[2] != 0 { LED_BRIGHT } else { LED_DIM };
                         }
@@ -360,19 +382,49 @@ impl<T: UsbContext> X1mk1<T> {
                             }
                             if !skip {  // skip sending midi for active layer buttons
                                 let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, button.midi_ctrl_ch, 127]);
+                            } else {
+                                // instead send special midi CC messages CH1 CC126 and CC127 to indicate layer change (to be received in Traktor modifiers 7 and 8)
+                                //let value_to_set_a: u8 = 0b001; // 1?
+                                //let value_to_set_b: u8 = 0b010; // 2?
+                                //let mut data_a: u8 = 0b00000000; // Start with zero
+                                //let mut data_b: u8 = 0b00000000; // Start with zero
+                                //data_a |= (value_to_set_a & 0b111);// << 5; // Shift value by 2, OR into data
+                                //data_b |= (value_to_set_b & 0b111);// << 5; // Shift value by 2, OR into data
+                                // data will be 0b00101000 (40)
+                                //println!("{:b} {}", data_a, data_a); 
+                                //println!("{:b} {}", data_b, data_b); 
+                                // handle layer_a
+                                let _ = self.midi_conn_out.send(&[MIDI_CHANNEL, 124, 127]); // layer A reset
+                                for _ in 0..self.layer_a {
+                                    let _ = self.midi_conn_out.send(&[MIDI_CHANNEL, 125, 127]); // layer A increment
+                                }
+                                // handle layer_b
+                                let _ = self.midi_conn_out.send(&[MIDI_CHANNEL, 126, 127]); // layer B reset
+                                for _ in 0..self.layer_b {
+                                    let _ = self.midi_conn_out.send(&[MIDI_CHANNEL, 127, 127]); // layer B increment
+                                }
+
+                            //    TODO: this isn't working since Traktor 3bit modifiers overflow from sending them u8 values != 0
+                            //    rather send out distinct CC messages for each layer state (e.g. layerA 0,1,2,3,4 = CC40,41,42,43,44 and layerB 0,1,2,3,4 = CC45,46,47,48,49)
+                            //    OR try Encoder relative once more (always use two messages: first to reset and second to set value)
+                            //    OR EVEN SIMPLER use "two" button messages: first message resets, second message increments the modifier value to the desired value (repeats 0-4times)
                             }
                             if ctrl_name.eq("HOTCUE") && self.shift == 0 {
                                 self.hotcue = !self.hotcue;
                                 self.led[button.write_idx as usize] = if self.hotcue { LED_BRIGHT } else { LED_DIM };
                             } else if ctrl_name.eq("HOTCUE") && self.shift == 1 {
-                                self.shiftHotcue = if self.shiftHotcue == 0 { 1 } else { 0 };
+                                self.shiftHotcue = 1; 
                                 for layerindicator in &mut self.led_layerindicator {
                                     layerindicator.reset();
                                 }
                             }
                         } else {
                             //this needs the current button status for toggle buttons
-                            //self.led[button.write_idx as usize] = LED_DIM; // push feedback
+                            if ctrl_name.eq("HOTCUE") && (self.shift == 1) {
+                                self.shiftHotcue = 0;  // turn off shiftHotcue when releasing HOTCUE button
+                                // make HOTCUE act like a Hold-button when SHIFT is held (no layer_offset on this button)
+                                let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift /*+ 2*layer_offset*/, button.midi_ctrl_ch, 0]);
+                            }
                         }
                     }
                     button.prev = button.curr;
@@ -393,6 +445,7 @@ impl<T: UsbContext> X1mk1<T> {
                     if button.curr == button.prev {
                         continue;
                     } else if button.curr {    
+                        // TODO: base LED_BRIGHT/DIM value on incoming midi value from self.led[x] to not break traktor led output when in hold
                         if self.shiftHotcue == 1 {
                             // LED debug output for self.shiftHotcue
                             self.led[button.write_idx as usize] = LED_BRIGHT;
@@ -405,6 +458,7 @@ impl<T: UsbContext> X1mk1<T> {
                             self.shift = 1;
                         }
                     } else {
+                        // TODO: base LED_BRIGHT/DIM value on incoming midi value from self.led[x] to not break traktor led output when in hold
                         self.led[button.write_idx as usize] = LED_DIM;
                         if ctrl_name.eq("SHIFT") {
                             self.shift = 0;
@@ -436,7 +490,28 @@ impl<T: UsbContext> X1mk1<T> {
                         } else if knob.layer_b {
                             layer_offset = self.layer_b;
                         }
-                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, knob.midi_ctrl_ch, knob.curr]);
+                        // TODO: below must not offset layer_offset&shift on the midi channel but only on the knob.midi_ctrl_ch
+                        //      because knobs need to be on the same midi channel for traktor's soft-takeover implementation to work.
+                        //      CC0-46 are already used: -> overlays start at CC47
+                        //      8 Knobs use CC0-CC07. 
+                        //      shift + Knobs layerA=layerB=0 start at CC47  0..7
+                        //      layer_AB1 start at CC55 + 0..7
+                        //      layer_AB1 + shift start at CC63 + 0..7 
+                        //      layer_AB2 start at CC71 + 0..7
+                        //      layer_AB2 + shift start at CC79 + 0..7
+                        //      layer_AB{layer_offset} = 1..2
+                        let mut knob_midi_ctrl_ch = knob.midi_ctrl_ch;
+                        if layer_offset > 0 {
+                            // -16 to immitate a full layer0+shift offset
+                            knob_midi_ctrl_ch = (55-16) + layer_offset*16 + self.shift*8 + knob.midi_ctrl_ch; 
+                        } else if self.shift == 1 {
+                            knob_midi_ctrl_ch = 47 + knob.midi_ctrl_ch;
+                        }
+                        // bullshit! knobs need to stay on same channel and cc for traktor soft-takeover to work!
+                        //println!("traktor_compat {}", self.board.configuration.traktor_compat_enabled);
+                        //let _ = self.midi_conn_out.send(&[MIDI_CHANNEL, knob_midi_ctrl_ch, knob.curr]);
+                        let _ = self.midi_conn_out.send(&[MIDI_CHANNEL /* + self.shift + 2*layer_offset*/, knob.midi_ctrl_ch, knob.curr]);
+
                     }
                     knob.prev = knob.curr;
                 }
@@ -468,6 +543,7 @@ impl<T: UsbContext> X1mk1<T> {
                         } else if encoder.layer_b {
                             layer_offset = self.layer_b;
                         }
+
                         let _ = self.midi_conn_out.send(&[MIDI_CHANNEL + self.shift + 2*layer_offset, encoder.midi_ctrl_ch, velocity]);
                     }
                     encoder.prev = encoder.curr;
